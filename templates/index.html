@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potential Risk Intelligence - Media Monitoring</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: #f8f9fa;
+            font-family: 'Inter', sans-serif;
+            color: #212529;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #052c65, #0d6efd);
+            color: white;
+            padding: 2.5rem 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .header h1 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .header .lead {
+            font-weight: 300;
+            opacity: 0.9;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+        }
+        .card:hover {
+      
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            border-bottom: none;
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .filter-section, .upload-section, .progress-container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .results-table {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-top: 1.5rem;
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table thead th {
+            border-top: none;
+            border-bottom-width: 1px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        .risk-low {
+            background-color: rgba(25, 135, 84, 0.1);
+        }
+        .risk-medium {
+            background-color: rgba(255, 193, 7, 0.1);
+        }
+        .risk-high {
+            background-color: rgba(253, 126, 20, 0.1);
+        }
+        .risk-critical {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        .paragraph-text, .summary-text {
+            padding: 5px 0;
+            line-height: 1.6;
+        }
+        .stat-card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+      
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .stat-card .number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #0d6efd;
+        }
+        .stat-card .title {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .icon {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.8rem;
+            opacity: 0.15;
+            color: #0d6efd;
+        }
+        .progress {
+            height: 25px;
+            margin-bottom: 15px;
+            border-radius: 50px;
+            background-color: #f0f0f0;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            border-radius: 50px;
+            color: #fff;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.6s ease;
+        }
+        .urgency-monitoring {
+            background-color: #0dcaf0;
+        }
+        .urgency-perhatian {
+            background-color: #ffc107;
+        }
+        .urgency-segera {
+            background-color: #fd7e14;
+        }
+        .urgency-darurat {
+            background-color: #dc3545;
+        }
+        .badge {
+            padding: 0.5rem 0.75rem;
+            font-weight: 600;
+            border-radius: 50px;
+        }
+        .badge-rendah {
+            background-color: rgba(25, 135, 84, 0.2);
+            color: #198754;
+        }
+        .badge-sedang {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #664d03;
+        }
+        .badge-tinggi {
+            background-color: rgba(253, 126, 20, 0.2);
+            color: #fd7e14;
+        }
+        .badge-kritis {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+        #loading-indicator {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .spinner-container {
+            background-color: white;
+            padding: 2.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .dropzone {
+            border: 2px dashed #0d6efd;
+            border-radius: 10px;
+            padding: 2.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        .dropzone:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+            cursor: pointer;
+        }
+        .alert-flash {
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        .progress-log {
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border: none;
+            margin-top: 15px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.85rem;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .progress-log p {
+            margin-bottom: 5px;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .progress-log p:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .progress-status {
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+        }
+        .status-analyzing {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #664d03;
+        }
+        .status-complete {
+            background-color: rgba(25, 135, 84, 0.2);
+            color: #155724;
+        }
+        .form-control, .form-select {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            font-size: 0.95rem;
+        }
+        .form-control:focus, .form-select:focus {
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            border-color: #86b7fe;
+        }
+        .input-group {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .input-group-text {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-left: none;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            border: none;
+            box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0a58ca, #084298);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(13, 110, 253, 0.4);
+        }
+        h3, h4, h5 {
+            font-weight: 600;
+        }
+        .nav-tabs {
+            border-bottom: none;
+            margin-bottom: 1.5rem;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            margin-right: 0.5rem;
+            transition: all 0.2s;
+        }
+        .nav-tabs .nav-link:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+            color: #0d6efd;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table thead {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #212529;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Indicator -->
+    <div id="loading-indicator">
+        <div class="spinner-container">
+            <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5 class="mb-3">Sedang menganalisis data...</h5>
+            <p class="mb-0 text-muted">Proses ini mungkin memakan waktu beberapa menit.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1><i class="bi bi-shield-exclamation"></i> Potential Risk Intelligence</h1>
+            <p class="lead">Media Monitoring & Analisis Kerawanan</p>
+        </div>
+        
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-flash">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- File Upload Section -->
+        <div class="upload-section">
+            <h3 class="mb-4"><i class="bi bi-cloud-upload"></i> Upload Files</h3>
+            <form method="POST" action="/" enctype="multipart/form-data" id="upload-form">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label for="tokoh_file" class="form-label">Data Tokoh (Excel)</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="tokoh_file" name="tokoh_file" accept=".xlsx,.xls">
+                            <span class="input-group-text"><i class="bi bi-file-earmark-excel"></i></span>
+                        </div>
+                        <div class="form-text">Pilih file Excel yang berisi data tokoh</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="berita_file" class="form-label">Data Berita (Word)</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="berita_file" name="berita_file" accept=".docx,.doc">
+                            <span class="input-group-text"><i class="bi bi-file-earmark-word"></i></span>
+                        </div>
+                        <div class="form-text">Pilih file Word yang berisi berita untuk dianalisis</div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-4 px-5 py-2">
+                    <i class="bi bi-lightning-charge"></i> Analisis Data
+                </button>
+            </form>
+        </div>
+        
+        <!-- Progress Section -->
+        <div class="progress-container" id="progress-section" style="display: none;">
+            <h4 class="mb-3"><i class="bi bi-activity"></i> Status Analisis</h4>
+            <div class="progress-info">
+                <div>
+                    <span id="progress-current">0</span>/<span id="progress-total">0</span> paragraf dianalisis
+                </div>
+                <div class="progress-status" id="progress-status">Idle</div>
+            </div>
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div class="mt-3">
+                <strong>Status:</strong> <span id="progress-message">Menunggu...</span>
+            </div>
+            <div class="progress-log" id="progress-log">
+                <p>Siap untuk menganalisis data...</p>
+            </div>
+        </div>
+        
+        <!-- Dashboard Stats -->
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="icon"><i class="bi bi-newspaper"></i></div>
+                    <div class="number">{{ stats.total_berita }}</div>
+                    <div class="title">Total Berita Dianalisis</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="icon"><i class="bi bi-person"></i></div>
+                    <div class="number">{{ stats.total_tokoh }}</div>
+                    <div class="title">Tokoh Terdeteksi</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="icon"><i class="bi bi-graph-up"></i></div>
+                    <div class="number">{{ "%.1f"|format(stats.avg_skor) }}</div>
+                    <div class="title">Rata-rata Skor Risiko</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="icon"><i class="bi bi-exclamation-triangle"></i></div>
+                    <div class="number">{{ stats.kategori_count.KRITIS + stats.kategori_count.TINGGI }}</div>
+                    <div class="title">Berita Risiko Tinggi/Kritis</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Kategori Risiko Stats -->
+        <div class="row mt-4 g-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Distribusi Kategori Risiko</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ stats.kategori_count.RENDAH_pct }}%">
+                                RENDAH {{ stats.kategori_count.RENDAH_pct }}%
+                            </div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ stats.kategori_count.SEDANG_pct }}%">
+                                SEDANG {{ stats.kategori_count.SEDANG_pct }}%
+                            </div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="background-color: #fd7e14; width: {{ stats.kategori_count.TINGGI_pct }}%" role="progressbar">
+                                TINGGI {{ stats.kategori_count.TINGGI_pct }}%
+                            </div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ stats.kategori_count.KRITIS_pct }}%">
+                                KRITIS {{ stats.kategori_count.KRITIS_pct }}%
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">Total Analisis: {{ stats.kategori_count.RENDAH + stats.kategori_count.SEDANG + stats.kategori_count.TINGGI + stats.kategori_count.KRITIS }}</span>
+                                <div>
+                                    <span class="badge badge-rendah me-1">RENDAH: {{ stats.kategori_count.RENDAH }}</span>
+                                    <span class="badge badge-sedang me-1">SEDANG: {{ stats.kategori_count.SEDANG }}</span>
+                                    <span class="badge badge-tinggi me-1">TINGGI: {{ stats.kategori_count.TINGGI }}</span>
+                                    <span class="badge badge-kritis">KRITIS: {{ stats.kategori_count.KRITIS }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-alarm"></i> Distribusi Tingkat Urgensi</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ (stats.urgensi_count.MONITORING / (stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT)) * 100 if (stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT) > 0 else 0 }}%">
+                                MONITORING
+                            </div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ (stats.urgensi_count.PERHATIAN / (stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT)) * 100 if (stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT) > 0 else 0 }}%">
+                                PERHATIAN
+                            </div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="background-color: #fd7e14; width: {{ (stats.urgensi_count.SEGERA / (stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT)) * 100 if (stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT) > 0 else 0 }}%" role="progressbar">
+                                SEGERA
+                            </div>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: {{ (stats.urgensi_count.DARURAT / (stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT)) * 100 if (stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT) > 0 else 0 }}%">
+                                DARURAT
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">Total Analisis: {{ stats.urgensi_count.MONITORING + stats.urgensi_count.PERHATIAN + stats.urgensi_count.SEGERA + stats.urgensi_count.DARURAT }}</span>
+                                <div>
+                                    <span class="badge bg-info me-1">MONITORING: {{ stats.urgensi_count.MONITORING }}</span>
+                                    <span class="badge bg-warning text-dark me-1">PERHATIAN: {{ stats.urgensi_count.PERHATIAN }}</span>
+                                    <span class="badge me-1" style="background-color: #fd7e14;">SEGERA: {{ stats.urgensi_count.SEGERA }}</span>
+                                    <span class="badge bg-danger">DARURAT: {{ stats.urgensi_count.DARURAT }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="filter-section mt-4">
+            <h4 class="mb-3"><i class="bi bi-funnel"></i> Filter Hasil Analisis</h4>
+            <form method="POST" action="/" class="row g-3" id="filter-form">
+                <input type="hidden" name="tokoh_file" id="hidden_tokoh_file">
+                <input type="hidden" name="berita_file" id="hidden_berita_file">
+                <div class="col-md-10">
+                    <label for="kategori" class="form-label">Kategori Risiko</label>
+                    <select name="kategori" id="kategori" class="form-select">
+                        <option value="all" {% if selected_kategori == 'all' %}selected{% endif %}>Semua Kategori</option>
+                        <option value="RENDAH" {% if selected_kategori == 'RENDAH' %}selected{% endif %}>RENDAH (0-30%)</option>
+                        <option value="SEDANG" {% if selected_kategori == 'SEDANG' %}selected{% endif %}>SEDANG (31-60%)</option>
+                        <option value="TINGGI" {% if selected_kategori == 'TINGGI' %}selected{% endif %}>TINGGI (61-85%)</option>
+                        <option value="KRITIS" {% if selected_kategori == 'KRITIS' %}selected{% endif %}>KRITIS (86-100%)</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-filter"></i> Terapkan</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="results-table">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Tanggal Ditambah</th>
+                            <th>Nama Tokoh</th>
+                            <th>Jabatan</th>
+                            <th>Ringkasan</th>
+                            <th>Skor</th>
+                            <th>Kerawanan</th>
+                            <th>Kategori</th>
+                            <th>Faktor Risiko</th>
+                            <th>Urgensi</th>
+                            <th>Rekomendasi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results %}
+                        <tr class="{% if result.kategori == 'KRITIS' %}risk-critical{% elif result.kategori == 'TINGGI' %}risk-high{% elif result.kategori == 'SEDANG' %}risk-medium{% elif result.kategori == 'RENDAH' %}risk-low{% endif %}">
+                            <td><strong>{{ result.tanggal_tambah if result.tanggal_tambah else 'Data lama' }}</strong></td>
+                            <td>{{ result.nama }}</td>
+                            <td>{{ result.jabatan }}</td>
+                            <td>
+                                <div class="summary-text">{{ result.ringkasan }}</div>
+                            </td>
+                            <td>{{ result.skor_risiko }}</td>
+                            <td>{{ result.persentase_kerawanan }}</td>
+                            <td>
+                                <span class="badge {% if result.kategori == 'RENDAH' %}badge-rendah{% elif result.kategori == 'SEDANG' %}badge-sedang{% elif result.kategori == 'TINGGI' %}badge-tinggi{% elif result.kategori == 'KRITIS' %}badge-kritis{% endif %}">
+                                    {{ result.kategori }}
+                                </span>
+                            </td>
+                            <td>{{ result.faktor_risiko }}</td>
+                            <td>
+                                <span class="badge {% if result.urgensi == 'MONITORING' %}urgency-monitoring{% elif result.urgensi == 'PERHATIAN' %}urgency-perhatian{% elif result.urgensi == 'SEGERA' %}urgency-segera{% elif result.urgensi == 'DARURAT' %}urgency-darurat{% endif %}">
+                                    {{ result.urgensi }}
+                                </span>
+                            </td>
+                            <td>{{ result.rekomendasi }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-4 mb-3 text-center">
+            <p class="text-muted small">Last updated: {{ current_time }}</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Show loading indicator when form is submitted
+        document.getElementById('upload-form').addEventListener('submit', function() {
+            document.getElementById('loading-indicator').style.display = 'flex';
+            document.getElementById('progress-section').style.display = 'block';
+        });
+        
+        // Hide loading indicator when page loads
+        window.addEventListener('load', function() {
+            document.getElementById('loading-indicator').style.display = 'none';
+        });
+        
+        // Server-sent events for progress updates
+        document.addEventListener('DOMContentLoaded', function() {
+            var progressSection = document.getElementById('progress-section');
+            var progressBar = document.getElementById('progress-bar');
+            var progressCurrent = document.getElementById('progress-current');
+            var progressTotal = document.getElementById('progress-total');
+            var progressStatus = document.getElementById('progress-status');
+            var progressMessage = document.getElementById('progress-message');
+            var progressLog = document.getElementById('progress-log');
+            
+            // Setup EventSource for SSE
+            var evtSource = new EventSource('/progress');
+            
+            // Keep track of logged messages to avoid duplicates
+            var loggedMessages = new Set();
+            
+            evtSource.onmessage = function(event) {
+                var data = JSON.parse(event.data);
+                
+                // Skip heartbeat messages
+                if (data.heartbeat) return;
+                
+                // Update progress section
+                progressSection.style.display = 'block';
+                
+                // Update progress data
+                if (data.total > 0) {
+                    var percent = Math.min(100, Math.round((data.current / data.total) * 100));
+                    progressBar.style.width = percent + '%';
+                    progressBar.textContent = percent + '%';
+                    progressCurrent.textContent = data.current;
+                    progressTotal.textContent = data.total;
+                }
+                
+                // Update status
+                progressStatus.textContent = data.status;
+                progressStatus.className = 'progress-status status-' + data.status.toLowerCase();
+                
+                // Update message
+                progressMessage.textContent = data.message;
+                
+                // Add to log if it's a new paragraph
+                if (data.last_analyzed && !loggedMessages.has(data.last_analyzed)) {
+                    var logEntry = document.createElement('p');
+                    logEntry.textContent = `[${data.current}/${data.total}] ${data.message}: ${data.last_analyzed}`;
+                    progressLog.appendChild(logEntry);
+                    progressLog.scrollTop = progressLog.scrollHeight; // Auto-scroll to bottom
+                    
+                    // Limit to last 5 messages to avoid UI clutter
+                    loggedMessages.add(data.last_analyzed);
+                    if (progressLog.children.length > 5) {
+                        progressLog.removeChild(progressLog.children[0]);
+                    }
+                }
+                
+                // Hide loading indicator when analysis is complete
+                if (data.status === 'Complete') {
+                    document.getElementById('loading-indicator').style.display = 'none';
+                }
+            };
+            
+            evtSource.onerror = function() {
+                console.error('EventSource failed');
+            };
+        });
+    </script>
+</body>
+</html> 
