@@ -12,7 +12,6 @@ import time
 import queue
 import threading
 from werkzeug.utils import secure_filename
-import hashlib
 
 app = Flask(__name__)
 app.secret_key = 'analisis_risiko_key'
@@ -168,13 +167,13 @@ def save_sample_data(data, add_date=False):
         logger.error(f"Error saving sample data: {e}")
         return data
 
-def analyze_paragraph(paragraph, person_name, person_jabatan=""):
-    """Send paragraph to Llama 4 Maverick via OpenRouter API for analysis with context on the specific person"""
-    # Check cache first but use person-specific key
-    cache_key = paragraph[:100] + "-" + person_name[:30]  # Combined key with person name
+def analyze_paragraph(paragraph, person_name):
+    """Send paragraph to Llama 4 Maverick via OpenRouter API for analysis"""
+    # Check cache first
+    cache_key = paragraph[:100]  # Use first 100 chars as key
     if cache_key in analysis_cache:
         # Update progress
-        progress_data['message'] = f"Using cached analysis for paragraph (person: {person_name})"
+        progress_data['message'] = f"Using cached analysis for paragraph"
         progress_data['last_analyzed'] = paragraph[:50] + "..." if len(paragraph) > 50 else paragraph
         progress_data['current'] += 1
         progress_queue.put(dict(progress_data))
@@ -183,51 +182,32 @@ def analyze_paragraph(paragraph, person_name, person_jabatan=""):
     
     try:
         # Update progress
-        progress_data['message'] = f"Analyzing paragraph with API for {person_name}"
+        progress_data['message'] = f"Analyzing paragraph with API"
         progress_data['last_analyzed'] = paragraph[:50] + "..." if len(paragraph) > 50 else paragraph
         progress_data['current'] += 1
         progress_queue.put(dict(progress_data))
         
-        logger.info(f"Pre-analyzing paragraph {progress_data['current']}/{progress_data['total']} for {person_name}")
+        logger.info(f"Pre-analyzing paragraph {progress_data['current']}/{progress_data['total']}")
         
         headers = {
             "Authorization": "Bearer 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",
             "Content-Type": "application/json"
         }
         
-        # Extract relevant context about the person from the paragraph
-        person_name_lower = person_name.lower()
-        sentences = paragraph.split('.')
-        person_context = []
-        
-        for sentence in sentences:
-            if person_name_lower in sentence.lower():
-                person_context.append(sentence.strip())
-        
-        person_context_text = ". ".join(person_context) if person_context else "No specific statements found"
-        
-        # Get the person's role/position 
-        person_role = f", yang merupakan {person_jabatan}" if person_jabatan else ""
-        
-        # Create a seed based on the person's name to get consistent but different responses
-        name_hash = hashlib.md5(person_name.encode()).hexdigest()
-        seed = int(name_hash[:8], 16) % 10000  # Convert first 8 chars of hash to integer
-        
         data = {
             "model": "meta-llama/llama-4-maverick",
             "messages": [
                 {
                     "role": "system",
-                    "content": "Kamu adalah analis intelijen keamanan senior yang fokus pada Potential Risk Intelligence. Tugasmu adalah mengevaluasi tingkat risiko berdasarkan konten berita dan pernyataan dari tokoh tertentu, serta memberikan rekomendasi yang spesifik untuk peran tokoh tersebut. Balas HANYA dengan JSON, tanpa penjelasan tambahan."
+                    "content": "Kamu adalah analis intelijen keamanan senior yang fokus pada Potential Risk Intelligence. Tugasmu adalah mengevaluasi tingkat risiko berdasarkan konten berita. Balas HANYA dengan JSON, tanpa penjelasan tambahan."
                 },
                 {
                     "role": "user",
-                    "content": f"Analisis kutipan berita berikut terkait tokoh '{person_name}'{person_role} dan berikan penilaian risiko kerawanan/kerusuhan berdasarkan pernyataan dan tindakan tokoh tersebut dalam berita. Fokus pada bagaimana pernyataan atau tindakan tokoh ini mempengaruhi situasi. Peran atau jabatan tokoh: {person_jabatan}.\n\nPernyataan atau tindakan tokoh: {person_context_text}\n\nKonteks berita lengkap: {paragraph}\n\nBalas HANYA dalam format JSON tanpa kalimat pembuka atau penutup:\n{{\n \"ringkasan\": \"Ringkasan singkat pernyataan/tindakan tokoh dan potensi dampaknya\",\n \"skor_risiko\": 75,\n \"persentase_kerawanan\": \"75%\",\n \"kategori\": \"TINGGI\",\n \"faktor_risiko\": [\"Faktor 1\", \"Faktor 2\"],\n \"rekomendasi\": \"Rekomendasi tindakan mitigasi yang KHUSUS sesuai peran tokoh '{person_name}' sebagai {person_jabatan} dalam isu ini. Rekomendasi harus spesifik dan berbeda dengan tokoh lainnya, berdasarkan jabatan dan pengaruhnya.\",\n \"urgensi\": \"SEGERA\"\n}}\n\nKategori harus salah satu dari: RENDAH (0-30%), SEDANG (31-60%), TINGGI (61-85%), KRITIS (86-100%)\nUrgensi harus salah satu dari: MONITORING, PERHATIAN, SEGERA, DARURAT\n\nAnalisis harus spesifik untuk pernyataan/peran tokoh '{person_name}' sebagai {person_jabatan} dalam berita ini. Pastikan rekomendasi disesuaikan dengan peran dan jabatan tokoh, bukan rekomendasi umum untuk semua tokoh."
+                    "content": f"Analisis kutipan berita berikut dan berikan penilaian risiko kerawanan/kerusuhan. Balas HANYA dalam format JSON tanpa kalimat pembuka atau penutup:\n{{\n \"ringkasan\": \"Ringkasan singkat berita\",\n \"skor_risiko\": 75,\n \"persentase_kerawanan\": \"75%\",\n \"kategori\": \"TINGGI\",\n \"faktor_risiko\": [\"Faktor 1\", \"Faktor 2\"],\n \"rekomendasi\": \"Rekomendasi tindakan mitigasi\",\n \"urgensi\": \"SEGERA\"\n}}\n\nKategori harus salah satu dari: RENDAH (0-30%), SEDANG (31-60%), TINGGI (61-85%), KRITIS (86-100%)\nUrgensi harus salah satu dari: MONITORING, PERHATIAN, SEGERA, DARURAT\n\nKutipan:\n{paragraph}"
                 }
             ],
-            "temperature": 0.7,  # Higher temperature for more varied responses
-            "max_tokens": 300,    # Limit response size for faster processing
-            "seed": seed          # Use seed based on person name for consistent but unique responses
+            "temperature": 0.1,  # Lower temperature for more consistent JSON formatting
+            "max_tokens": 300    # Limit response size for faster processing
         }
         
         response = requests.post(
@@ -245,8 +225,8 @@ def analyze_paragraph(paragraph, person_name, person_jabatan=""):
             analysis = extract_json_from_text(content)
             
             # Initialize nama and jabatan fields
-            analysis['nama'] = person_name
-            analysis['jabatan'] = person_jabatan
+            analysis['nama'] = ''
+            analysis['jabatan'] = 'N/A'
             
             # Make sure faktor_risiko is a list
             if 'faktor_risiko' in analysis and isinstance(analysis['faktor_risiko'], str):
@@ -259,30 +239,30 @@ def analyze_paragraph(paragraph, person_name, person_jabatan=""):
         else:
             logger.error(f"API request failed with status code {response.status_code}: {response.text}")
             default_response = {
-                "ringkasan": f"API request failed for {person_name}", 
+                "ringkasan": "API request failed", 
                 "skor_risiko": 0, 
                 "persentase_kerawanan": "0%", 
                 "kategori": "RENDAH", 
                 "faktor_risiko": ["Error API"], 
                 "rekomendasi": "Coba lagi nanti", 
                 "urgensi": "MONITORING",
-                "nama": person_name,
-                "jabatan": person_jabatan
+                "nama": "",
+                "jabatan": "N/A"
             }
             analysis_cache[cache_key] = default_response
             return default_response
     except requests.exceptions.Timeout:
-        logger.error(f"API request timed out for paragraph: {paragraph[:50]}... (person: {person_name})")
+        logger.error(f"API request timed out for paragraph: {paragraph[:50]}...")
         default_response = {
-            "ringkasan": f"API request timed out for {person_name}", 
+            "ringkasan": "API request timed out", 
             "skor_risiko": 0, 
             "persentase_kerawanan": "0%", 
             "kategori": "RENDAH", 
             "faktor_risiko": ["Timeout"], 
             "rekomendasi": "Coba lagi nanti", 
             "urgensi": "MONITORING",
-            "nama": person_name,
-            "jabatan": person_jabatan
+            "nama": "",
+            "jabatan": "N/A"
         }
         analysis_cache[cache_key] = default_response
         return default_response
@@ -296,8 +276,8 @@ def analyze_paragraph(paragraph, person_name, person_jabatan=""):
             "faktor_risiko": ["Error"], 
             "rekomendasi": "Periksa koneksi", 
             "urgensi": "MONITORING",
-            "nama": person_name,
-            "jabatan": person_jabatan
+            "nama": "",
+            "jabatan": "N/A"
         }
         analysis_cache[cache_key] = default_response
         return default_response
@@ -431,10 +411,14 @@ def index():
                 # Get analysis for this paragraph or analyze it if not done yet
                 cache_key = paragraph[:100]
                 if cache_key not in processed_keys:
-                    # We don't need the generic analysis anymore since we'll do person-specific ones
-                    # Just mark this paragraph as processed
+                    if cache_key in analysis_cache:
+                        paragraph_analyses[paragraph] = analysis_cache[cache_key]
+                    else:
+                        analysis = analyze_paragraph(paragraph, "")
+                        paragraph_analyses[paragraph] = analysis
+                        # Cache is updated inside analyze_paragraph
+                    
                     processed_keys.add(cache_key)
-                    paragraph_analyses[paragraph] = {}  # Empty dict to store person-specific analyses
                 
                 # Find matching people
                 matched_people = []
@@ -444,44 +428,25 @@ def index():
                 
                 # Create result for each matched person
                 for person in matched_people:
-                    try:
-                        # For each person, perform a person-specific analysis
-                        person_name = person.get('nama', '')
-                        if not person_name:  # Skip if name is empty
-                            continue
-                        
-                        # Get jabatan from Excel data
-                        jabatan = person.get('jabatan', 'N/A')
-                            
-                        # Create a person-specific cache key
-                        person_cache_key = paragraph[:100] + "-" + person_name[:30]
-                        
-                        # Check if we already have a person-specific analysis
-                        if person_cache_key in analysis_cache:
-                            analysis = analysis_cache[person_cache_key]
-                        else:
-                            # Get a personalized analysis for this specific person
-                            analysis = analyze_paragraph(paragraph, person_name, jabatan)
-                        
-                        # Create a deep copy of the analysis to avoid modifying the cached version
-                        person_analysis = analysis.copy()
-                        
-                        # Update the person-specific fields
-                        person_analysis['nama'] = person_name
-                        person_analysis['jabatan'] = jabatan
+                    analysis = paragraph_analyses[paragraph]
+                    
+                    # Pastikan nama dalam person ada di Excel
+                    if 'nama' in person and person.get('nama', ''):
+                        # Jabatan hanya diambil dari Excel, jangan gunakan data lain
+                        jabatan = person.get('jabatan', '')
                         
                         # Buat result dengan data yang benar
                         result = {
-                            'nama': person_name,
-                            'jabatan': jabatan,  # Gunakan jabatan dari Excel
+                            'nama': person.get('nama', ''),
+                            'jabatan': jabatan,  # Gunakan jabatan dari Excel, kosong jika tidak ada
                             'paragraf': paragraph,
-                            'ringkasan': person_analysis.get('ringkasan', 'N/A'),
-                            'skor_risiko': person_analysis.get('skor_risiko', 0),
-                            'persentase_kerawanan': person_analysis.get('persentase_kerawanan', '0%'),
-                            'kategori': person_analysis.get('kategori', 'RENDAH'),
-                            'faktor_risiko': person_analysis.get('faktor_risiko', []),
-                            'rekomendasi': person_analysis.get('rekomendasi', 'N/A'),
-                            'urgensi': person_analysis.get('urgensi', 'MONITORING')
+                            'ringkasan': analysis.get('ringkasan', 'N/A'),
+                            'skor_risiko': analysis.get('skor_risiko', 0),
+                            'persentase_kerawanan': analysis.get('persentase_kerawanan', '0%'),
+                            'kategori': analysis.get('kategori', 'RENDAH'),
+                            'faktor_risiko': analysis.get('faktor_risiko', []),
+                            'rekomendasi': analysis.get('rekomendasi', 'N/A'),
+                            'urgensi': analysis.get('urgensi', 'MONITORING')
                         }
                         
                         # If faktor_risiko is a list, join it for display
@@ -489,9 +454,6 @@ def index():
                             result['faktor_risiko'] = ', '.join(result['faktor_risiko'])
                         
                         results.append(result)
-                    except Exception as e:
-                        logger.error(f"Error processing person {person.get('nama', 'Unknown')}: {e}")
-                        continue
             
             # Update progress on completion
             progress_data['status'] = 'Complete'
@@ -634,4 +596,4 @@ def export_results():
         return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(debug=False, port=5001)
+    app.run(debug=True, port=5001)
